@@ -121,17 +121,18 @@ fn main() {
         }
     }
 
-
-
     let len = pages.len();
-    println!("{len}");
     let iterations = u64::BITS - (len-1).leading_zeros(); // log2(len).ceil()
  
     // Start the hashing process
     // Hashes are grouped in to tuples of 2 such that they can be hashed together.
     // I'm sure this section can be taken off the shelf somehwere, check juno or reth for example
-    // Note we drop a lot of pages if it's odd / rip TODO, handle this
-    for _ in 1..iterations {
+    for _ in 0..iterations {
+        let len = pages.len();
+        let mut last_page: Vec<Vec<u8>> = Vec::new();
+        if !len % 2 == 0 {
+            last_page.push(pages[len - 1].clone());
+        };
         pages = pages.into_iter().array_chunks::<2>().map(|[h1, h2]| {
             let buffer = [h1, h2].concat();
             let mut hasher = Sha256::new();
@@ -139,6 +140,8 @@ fn main() {
             let result_bytes = hasher.finalize().to_vec();
             result_bytes
         }).collect::<Vec<_>>();
+        pages.append(&mut last_page);
     }
+    assert!(pages.len() == 1, "Didn't finish the merkel hashing process, had {} nodes", pages.len());
     println!("\nhash of the first {0} pages: \n\n\t 0x{1}", len, encode(&pages[0]));
 }

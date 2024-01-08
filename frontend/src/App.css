@@ -1,0 +1,28 @@
+#root {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  overflow: trim;
+}
+
+ol {
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+li {
+  list-style: none;
+  margin: 0;
+  padding: 1vh;
+  margin: 0 1vh 0 1vh;
+}
+
+.ais-Hits-item {
+  border: 2px solid;
+  border-radius: 15px;
+  overflow: hidden;
+}
+

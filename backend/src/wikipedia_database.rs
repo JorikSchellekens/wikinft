@@ -1,13 +1,27 @@
 use std::fs::File;
 use std::io::{BufReader, Cursor};
+use std::process::Command;
 
+use serde::{Serialize, Deserialize};
+use meilisearch_sdk::client::*;
 use rocksdb::{DB};
+use futures::executor::block_on;
 
 use quick_xml::events::{Event};
 use quick_xml::reader::Reader;
 use quick_xml::writer::Writer;
 
-pub fn populate_database(wiki_xml: File, limit: usize) {
+const MEILISEARCH_URL: &str = "http://localhost:7700";
+const MEILISEARCH_API_KEY: &str = "aSampleMasterKey";
+
+#[derive(Serialize, Deserialize, Debug)]
+struct WikiPage {
+    id: usize,
+    title: String,
+    body: String,
+}
+
+pub fn populate_database(wiki_xml: File, limit: usize) {block_on(async move {
     let buffered_wiki_xml = BufReader::new(wiki_xml);
     let mut reader = Reader::from_reader(buffered_wiki_xml);
     let mut depth = 0;
@@ -21,8 +35,13 @@ pub fn populate_database(wiki_xml: File, limit: usize) {
     let mut page_buffer = Vec::new();
 
     let db = DB::open_default("./wikipedia.rocksdb").unwrap();
+    let meilisearch_client = Client::new(MEILISEARCH_URL, Some(MEILISEARCH_API_KEY));
+    let wiki_pages = meilisearch_client.index("wiki_pages");
+    
+
 
     loop {
+        println!("{}", page_count);
         // let mut tx = persy.begin().unwrap();
         if last_para { last_para = false }
         event_buffer.clear();
@@ -86,8 +105,15 @@ pub fn populate_database(wiki_xml: File, limit: usize) {
                 }
                 // hash replace the page
                 if last_para {
+                    //db.put(&current_page_title, page_buffer.clone()).unwrap();
+                    wiki_pages.add_documents(&[
+                        WikiPage {
+                            id: page_count,
+                            title: String::from_utf8(current_page_title.clone()).unwrap(),
+                            body: String::from_utf8(page_buffer.clone()).unwrap()
+                        }
+                    ], Some("id")).await.unwrap();
                     page_count += 1;
-                    db.put(&current_page_title, page_buffer.clone()).unwrap();
                 }
                 if last_para && page_count >= limit { 
 
@@ -97,4 +123,4 @@ pub fn populate_database(wiki_xml: File, limit: usize) {
             _ => {panic!("Couldn't write stream to vec")}
         }
     }
-}
+})}

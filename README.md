@@ -2,7 +2,6 @@
 <div align="center">
   <img src="assets/wikinft.png" height="128">
 </div>
-<div align="center">
 <br />
 <!-- markdownlint-restore -->
 
